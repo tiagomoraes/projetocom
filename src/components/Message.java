@@ -3,7 +3,9 @@ package components;
 public class Message {
 	private String sender;
 	private String message;
-	private int status; // 0 = pending; 1 = sent; 2 = arrived; 3 = read;
+	private String reciever;
+	private int id;
+	private int status; // 0 = pending; 1 = sent; 2 = arrived; 3 = read; 4 = erased;
 	
 	
 	public Message() {
@@ -39,5 +41,13 @@ public class Message {
 
 	public void setStatus(int status) {
 		this.status = status;
+	}
+
+	public int getId() {
+		return id;
+	}
+
+	public String getReciever() {
+		return reciever;
 	}
 }
