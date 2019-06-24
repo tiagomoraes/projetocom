@@ -51,6 +51,9 @@ public class HomeView {
 	private ObjectOutputStream myOutput;
 	private Socket mysocket;
 	private String myname;
+	private String myip;
+	private String auserip;
+	private String ausername;
 	private String serverip;
 	private Semaphore sem;
 	private int port;
@@ -58,16 +61,18 @@ public class HomeView {
 	/**
 	 * Launch the application.
 	 */
-	
-		//arg0 = name;
-		//arg1 = server ip;
-		//arg2 = port;
+		//arg0 = myip
+		//arg1 = myname;
+		//arg2 = serverip;
+		//arg3 = auserip;
+		//arg4 = ausername;
+		//arg5 = myport;
 	
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					HomeView window = new HomeView(args[0], args[1], Integer.parseInt(args[2]));
+					HomeView window = new HomeView(args[0], args[1], args[2] , args[3], args[4],Integer.parseInt(args[5]));
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -79,16 +84,19 @@ public class HomeView {
 	/**
 	 * Create the application.
 	 */
-	public HomeView(String myname, String serverip, int port) {
+	public HomeView(String myip, String myname, String serverip, String auserip, String ausername, int myport) {
 		// Initialize Local variables
 		this.myname = myname;
+		this.myip = myip;
 		this.serverip = serverip;
-		this.port = port;
+		this.auserip = auserip;
+		this.ausername = ausername;
+		this.port = myport;
 		this.sem = new Semaphore(1);
 		this.messageArr = new Vector<Message>();
 		// connect to server
 		try {
-			this.mysocket = new Socket(serverip, port);
+			this.mysocket = new Socket(this.serverip, this.port);
 			this.myInput = new ObjectInputStream(mysocket.getInputStream());
 			this.myOutput = new ObjectOutputStream(mysocket.getOutputStream());
 			new listen().start();
@@ -130,7 +138,7 @@ public class HomeView {
 		JButton btnSend = new JButton("Send");
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				sendMessage("name1", "name2",textInput.getText());
+				sendMessage(myip, auserip,textInput.getText());
 			}
 		});
 		btnSend.setBounds(315, 513, 81, 33);
@@ -139,9 +147,9 @@ public class HomeView {
 	}
 	
 	private void sendMessage(String sender, String receiver,String message) {
-		Message msg = new Message(sender, receiver ,message);
+		Message msg = new Message(sender, receiver,message);
 		
-		//this.textInput.removeAll(); fazer remover o texto do input text
+		//this.textInput.removeAll() fazer remover o texto do input text
 		
 		// Code to send message TCP
 		try {
@@ -188,12 +196,12 @@ public class HomeView {
 		this.boxMessages.repaint();
 	}
 	
-	// action read message 
+//	 action read message 
 //	private void readMessage() {
 //		//send message with 3
 //	}
 	
-	// action delete message
+//	 action delete message
 //	private void deleteMessage() {
 //		//send message with 4
 //	}
@@ -204,9 +212,9 @@ public class HomeView {
 				try {
 					Message m = (Message)myInput.readObject();
 					sem.acquire();
-					if (m.getStatus() == 1 && !m.getReceiver().contains(myname)) {
+					if (m.getStatus() == 1 && !m.getReceiver().contains(myip)) {
 						updateMessages(m);
-					} else if (m.getStatus() == 1 && m.getReceiver().contains(myname)) {
+					} else if (m.getStatus() == 1 && m.getReceiver().contains(myip)) {
 						messageArr.add(m);
 						updateMessages(m);
 						m.setStatus(2);
