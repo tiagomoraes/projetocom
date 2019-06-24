@@ -3,7 +3,7 @@ package components;
 public class Message {
 	private String sender;
 	private String message;
-	private String reciever;
+	private String receiver;
 	private int id;
 	private int status; // 0 = pending; 1 = sent; 2 = arrived; 3 = read; 4 = erased;
 	
@@ -13,8 +13,9 @@ public class Message {
 		this.message = "";
 	}
 	
-	public Message(String sender, String message) {
+	public Message(String sender, String receiver, String message) {
 		this.sender = sender;
+		this.receiver = receiver;
 		this.message = message;
 		this.status = 0;
 	}
@@ -47,7 +48,17 @@ public class Message {
 		return id;
 	}
 
-	public String getReciever() {
-		return reciever;
+	public String getReceiver() {
+		return receiver;
 	}
+	
+	public void setReceiver (String receiver) {
+		this.receiver = receiver;
+	}
+	
+	public void setId (int id) {
+		this.id = id;
+	}
+	
 }
+
