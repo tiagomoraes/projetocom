@@ -1,7 +1,8 @@
 package view;
 
-import java.net.*;
+
 import java.io.*;
+import java.net.*;
 import java.util.*;
 
 import java.awt.EventQueue;
@@ -21,6 +22,8 @@ import java.awt.Color;
 import javax.swing.JList;
 import javax.swing.AbstractListModel;
 import javax.swing.border.LineBorder;
+
+//import com.sun.java.swing.plaf.windows.resources.windows;
 
 // Custom imports
 import components.Message;
@@ -44,7 +47,7 @@ public class HomeView {
 	private JFrame frame;
 	private JTextField textInput;
 	private Box boxMessages;
-	
+
 	// Local variables should be declared here
 	private Vector<Message> messageArr;
 	private ObjectInputStream myInput;
@@ -61,19 +64,18 @@ public class HomeView {
 	/**
 	 * Launch the application.
 	 */
-		//arg0 = myip
-		//arg1 = myname;
-		//arg2 = serverip;
-		//arg3 = auserip;
-		//arg4 = ausername;
-		//arg5 = myport;
-	
+	//arg0 = myip
+	//arg1 = myname;
+	//arg2 = serverip;
+	//arg3 = auserip;
+	//arg4 = ausername;
+	//arg5 = myport;
+
 	public static void main(String[] args) {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
 					HomeView window = new HomeView(args[0], args[1], args[2] , args[3], args[4],Integer.parseInt(args[5]));
-					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -85,6 +87,7 @@ public class HomeView {
 	 * Create the application.
 	 */
 	public HomeView(String myip, String myname, String serverip, String auserip, String ausername, int myport) {
+
 		// Initialize Local variables
 		this.myname = myname;
 		this.myip = myip;
@@ -94,46 +97,52 @@ public class HomeView {
 		this.port = myport;
 		this.sem = new Semaphore(1);
 		this.messageArr = new Vector<Message>();
+
+		// Initialize jPanel
+		initialize();
+		this.frame.setVisible(true);
+		
 		// connect to server
 		try {
-			this.mysocket = new Socket(this.serverip, this.port);
-			this.myInput = new ObjectInputStream(mysocket.getInputStream());
-			this.myOutput = new ObjectOutputStream(mysocket.getOutputStream());
+			mysocket = new Socket(serverip, port);
+			myInput = new ObjectInputStream(mysocket.getInputStream());
+			myOutput = new ObjectOutputStream(mysocket.getOutputStream());
+			System.out.println("meme");
 			new listen().start();
 		} catch (Exception e){
 			e.printStackTrace();
 		}
-		// Initialize jPanel
-		initialize();
+		
+
 	}
 
 	/**
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		
+
 		frame = new JFrame();
 		frame.setBounds(100, 100, 440, 600);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(new GridLayout(1, 0, 0, 0));
-		
+
 		JPanel panel = new JPanel();
 		panel.setBackground(Color.WHITE);
 		frame.getContentPane().add(panel);
 		panel.setLayout(null);
-		
+
 		JScrollPane scrollPane = new JScrollPane();
 		scrollPane.setBounds(30, 12, 373, 476);
 		panel.add(scrollPane);
-		
+
 		this.boxMessages = Box.createVerticalBox();
 		scrollPane.setViewportView(boxMessages);
-		
+
 		textInput = new JTextField();
 		textInput.setBounds(30, 513, 280, 33);
 		panel.add(textInput);
 		textInput.setColumns(10);
-		
+
 		// When button "Send" is clicked, append an item to the list and refresh content
 		JButton btnSend = new JButton("Send");
 		btnSend.addActionListener(new ActionListener() {
@@ -143,19 +152,19 @@ public class HomeView {
 		});
 		btnSend.setBounds(315, 513, 81, 33);
 		panel.add(btnSend);
-		
+
 	}
-	
+
 	private void sendMessage(String sender, String receiver,String message) {
 		Message msg = new Message(sender, receiver,message);
-		
+
 		//this.textInput.removeAll() fazer remover o texto do input text
-		
+
 		// Code to send message TCP
 		try {
 			sem.acquire();
-			msg.setId(this.messageArr.size());
-			this.messageArr.add(msg);
+			msg.setId(messageArr.size());
+			messageArr.add(msg);
 			sendTCPMessage(msg);
 			updateMessages(msg);
 			sem.release();
@@ -164,62 +173,72 @@ public class HomeView {
 		}
 
 	}
-	
+
 	private void sendTCPMessage(Message m) {
 		try {
-			this.myOutput.writeObject(m);
+			myOutput.writeObject(m);
+			myOutput.flush();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void updateMessages(Message i) {
-		this.boxMessages.removeAll();
-		this.messageArr.get(i.getId()).setStatus(i.getStatus());
+		boxMessages.removeAll();
+		messageArr.get(i.getId()).setStatus(i.getStatus());
 		if (i.getStatus() == 4) {
-			this.messageArr.get(i.getId()).setMessage("");
+			System.out.println("kkkk21");
+			messageArr.get(i.getId()).setMessage("------------");
 		}
 		for(Message m : messageArr) {
-//			Display messages
+			// Display messages
 			JPanel gridMessage = new JPanel();
 			boxMessages.add(gridMessage);
 			gridMessage.setLayout(new GridLayout(1, 0, 0, 0));
-			
+
 			JLabel txtMessage = new JLabel(m.getMessage());
 			gridMessage.add(txtMessage);
 			
-			JLabel statusMessage = new JLabel(String.valueOf(m.getStatus()));
-			gridMessage.add(statusMessage);
+			if (m.getSender().equals(myip)) {
+				JLabel statusMessage = new JLabel(String.valueOf(m.getStatus()));
+				gridMessage.add(statusMessage);
+			}
 		}
-		
-		this.boxMessages.revalidate();
-		this.boxMessages.repaint();
+
+		boxMessages.revalidate();
+		boxMessages.repaint();
 	}
-	
-//	 action read message 
-//	private void readMessage() {
-//		//send message with 3
-//	}
-	
-//	 action delete message
-//	private void deleteMessage() {
-//		//send message with 4
-//	}
-	
+
+	// action read message
+	// private void readMessage() {
+	// //send message with 3
+	// }
+
+	// action delete message
+	// private void deleteMessage() {
+	// //send message with 4
+	// }
+
 	class listen extends Thread {
+		public listen () {
+			super();
+		}
 		public void run() {
 			while (true) {
 				try {
-					Message m = (Message)myInput.readObject();
+					Message m = (Message) myInput.readObject();
+
 					sem.acquire();
 					if (m.getStatus() == 1 && !m.getReceiver().contains(myip)) {
 						updateMessages(m);
 					} else if (m.getStatus() == 1 && m.getReceiver().contains(myip)) {
+						//System.out.println("kkkkkkkk");
 						messageArr.add(m);
 						updateMessages(m);
-						m.setStatus(2);
-						m.setMessage("");
-						sendTCPMessage(m);
+						Message aux = new Message(m.getSender(), m.getReceiver(), "");
+						aux.setStatus(2);
+						aux.setId(m.getId());
+						sendTCPMessage(aux);
 					} else if (m.getStatus() == 2) {
 						updateMessages(m);
 					} else if (m.getStatus() == 3) {
