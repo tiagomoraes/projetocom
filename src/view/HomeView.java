@@ -60,6 +60,7 @@ public class HomeView {
 	private String serverip;
 	private Semaphore sem;
 	private int port;
+	private int lastRead;
 
 	/**
 	 * Launch the application.
@@ -95,6 +96,7 @@ public class HomeView {
 		this.auserip = auserip;
 		this.ausername = ausername;
 		this.port = myport;
+		this.lastRead = 0;
 		this.sem = new Semaphore(1);
 		this.messageArr = new Vector<Message>();
 
@@ -103,17 +105,7 @@ public class HomeView {
 		this.frame.setVisible(true);
 		
 		// connect to server
-		try {
-			mysocket = new Socket(serverip, port);
-			myInput = new ObjectInputStream(mysocket.getInputStream());
-			myOutput = new ObjectOutputStream(mysocket.getOutputStream());
-			System.out.println("meme");
-			new listen().start();
-		} catch (Exception e){
-			e.printStackTrace();
-		}
-		
-
+		connect();
 	}
 
 	/**
@@ -150,20 +142,33 @@ public class HomeView {
 				sendMessage(myip, auserip,textInput.getText());
 			}
 		});
+		
 		btnSend.setBounds(315, 513, 81, 33);
 		panel.add(btnSend);
-
+		
+		// poder ser tocar no scroll ou em alguma parte do app, digitar alguma coisa la na box etc. 
+		// ler msg le le tudo na tela q o outro enviou (só manda uma msg contendo o indice no vetor da ultima msg enviada por sender)
+		// ter um boolean ou alguma condição pra nao mandar msg redundante
+		// action read message
+		// private void readMessage() {
+		// //send message with 3
+		// }
+		
+		// pode ser um botao no lado de cada msg ou um double click
+		// se for msg do outro usuario, só apaga localmente, se for sua manda uma msg com 4 e o indice no seu vetor
+		// action delete message
+		// private void deleteMessage() {
+		// //send message with 4
+		// }
 	}
 
 	private void sendMessage(String sender, String receiver,String message) {
 		Message msg = new Message(sender, receiver,message);
-
-		//this.textInput.removeAll() fazer remover o texto do input text
-
 		// Code to send message TCP
 		try {
 			sem.acquire();
-			msg.setId(messageArr.size());
+			msg.setPs(messageArr.size());
+			msg.setPr(-1);
 			messageArr.add(msg);
 			sendTCPMessage(msg);
 			updateMessages(msg);
@@ -171,7 +176,7 @@ public class HomeView {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-
+		this.textInput.setText("");
 	}
 
 	private void sendTCPMessage(Message m) {
@@ -185,12 +190,20 @@ public class HomeView {
 
 	private void updateMessages(Message i) {
 		boxMessages.removeAll();
-		messageArr.get(i.getId()).setStatus(i.getStatus());
-		if (i.getStatus() == 4) {
-			System.out.println("kkkk21");
-			messageArr.get(i.getId()).setMessage("------------");
-		}
-		for(Message m : messageArr) {
+		if (this.myip.equals(i.getSender())) {
+			messageArr.get(i.getPs()).setStatus(i.getStatus());
+			if (i.getStatus() == 3) {
+				for (int j = this.lastRead; j < messageArr.size(); j++) {
+					this.messageArr.get(j).setStatus(3);
+				}
+			} else if (i.getStatus() == 2) {
+				messageArr.get(i.getPs()).setPr(i.getPr());
+			}
+		} else if (this.myip.equals(i.getReceiver())) {
+			messageArr.get(i.getPr()).setStatus(i.getStatus());
+			if (i.getStatus() == 4) messageArr.get(i.getPr()).setMessage("----DELETED----");
+		}	
+		for (Message m : messageArr) {
 			// Display messages
 			JPanel gridMessage = new JPanel();
 			boxMessages.add(gridMessage);
@@ -208,16 +221,17 @@ public class HomeView {
 		boxMessages.revalidate();
 		boxMessages.repaint();
 	}
-
-	// action read message
-	// private void readMessage() {
-	// //send message with 3
-	// }
-
-	// action delete message
-	// private void deleteMessage() {
-	// //send message with 4
-	// }
+	
+	private void connect() {
+		try {
+			mysocket = new Socket(serverip, port);
+			myInput = new ObjectInputStream(mysocket.getInputStream());
+			myOutput = new ObjectOutputStream(mysocket.getOutputStream());
+			new listen().start();
+		} catch (Exception e){
+			e.printStackTrace();
+		}
+	}
 
 	class listen extends Thread {
 		public listen () {
@@ -232,12 +246,12 @@ public class HomeView {
 					if (m.getStatus() == 1 && !m.getReceiver().contains(myip)) {
 						updateMessages(m);
 					} else if (m.getStatus() == 1 && m.getReceiver().contains(myip)) {
-						//System.out.println("kkkkkkkk");
+						Message aux = new Message(m.getSender(), m.getReceiver(), "");
+						aux.setPs(m.getPs());
+						aux.setPr(messageArr.size());
 						messageArr.add(m);
 						updateMessages(m);
-						Message aux = new Message(m.getSender(), m.getReceiver(), "");
 						aux.setStatus(2);
-						aux.setId(m.getId());
 						sendTCPMessage(aux);
 					} else if (m.getStatus() == 2) {
 						updateMessages(m);

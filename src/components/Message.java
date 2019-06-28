@@ -1,10 +1,10 @@
 package components;
 
 public class Message {
-	private String sender;
-	private String message;
-	private String receiver;
-	private int id;
+	private String message; // conteudo da mensagem
+	private String sender; // ip de sender
+	private String receiver; // ip de receiver
+	private int ps, pr; // ps indica indice em sender e pr indice em receiver
 	private int status; // 0 = pending; 1 = sent; 2 = arrived; 3 = read; 4 = erased;
 	
 	
@@ -44,10 +44,6 @@ public class Message {
 		this.status = status;
 	}
 
-	public int getId() {
-		return id;
-	}
-
 	public String getReceiver() {
 		return receiver;
 	}
@@ -56,9 +52,20 @@ public class Message {
 		this.receiver = receiver;
 	}
 	
-	public void setId (int id) {
-		this.id = id;
+	public int getPs() {
+		return ps;
 	}
 	
+	public void setPs (int ps) {
+		this.ps = ps;
+	}
+	
+	public void setPr (int pr) {
+		this.pr = pr;
+	}
+	
+	public int getPr () {
+		return pr;
+	}
 }
 
