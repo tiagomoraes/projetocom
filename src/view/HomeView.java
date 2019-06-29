@@ -61,7 +61,10 @@ public class HomeView {
 	private Semaphore sem;
 	private int port;
 	private int lastRead;
-
+	private int toSend;
+	private connect tryTo;
+	//private checkToSend check;
+	private boolean st;
 	/**
 	 * Launch the application.
 	 */
@@ -99,13 +102,18 @@ public class HomeView {
 		this.lastRead = 0;
 		this.sem = new Semaphore(1);
 		this.messageArr = new Vector<Message>();
+		this.toSend = 0;
+		this.st = true;
 
 		// Initialize jPanel
 		initialize();
 		this.frame.setVisible(true);
 		
 		// connect to server
-		connect();
+		this.tryTo = new connect();
+		tryTo.start();
+//		this.check = new checkToSend(this.tryTo);
+//		this.check.start();
 	}
 
 	/**
@@ -167,20 +175,35 @@ public class HomeView {
 		// Code to send message TCP
 		try {
 			sem.acquire();
-			msg.setPs(messageArr.size());
-			msg.setPr(-1);
-			messageArr.add(msg);
-			sendTCPMessage(msg);
+			//if (!msg.getSender().equals("-1")) {
+				msg.setPs(messageArr.size());
+				msg.setPr(-1);
+				messageArr.add(msg);
+			//}
+			if (!tryTo.isAlive()) {
+				//System.out.println("kaka");
+				for (int i = this.toSend; i < messageArr.size(); i++) {
+					if (messageArr.get(i).getSender().equals(this.myip)) {
+						sendTCPMessage(messageArr.get(i));
+					}
+					this.toSend = i+1;
+				}
+			}			
 			updateMessages(msg);
 			sem.release();
 		} catch (Exception e) {
-			e.printStackTrace();
+			sem.release();
+			if (!tryTo.isAlive()) {
+				tryTo.start();
+			}
 		}
 		this.textInput.setText("");
 	}
 
 	private void sendTCPMessage(Message m) {
 		try {
+			//System.out.println("mememememem");
+			if (m.getStatus() == 2) System.out.println("msg 2");
 			myOutput.writeObject(m);
 			myOutput.flush();
 		} catch (Exception e) {
@@ -222,14 +245,30 @@ public class HomeView {
 		boxMessages.repaint();
 	}
 	
-	private void connect() {
-		try {
-			mysocket = new Socket(serverip, port);
-			myInput = new ObjectInputStream(mysocket.getInputStream());
-			myOutput = new ObjectOutputStream(mysocket.getOutputStream());
-			new listen().start();
-		} catch (Exception e){
-			e.printStackTrace();
+	class connect extends Thread {
+		public connect () {
+			super ();
+		}
+		public void run () {
+			while (true) {
+				try {
+					sem.acquire();
+					mysocket = new Socket(serverip, port);
+					myInput = new ObjectInputStream(mysocket.getInputStream());
+					myOutput = new ObjectOutputStream(mysocket.getOutputStream());
+					sem.release();
+					new listen().start();
+					break;
+				} catch (Exception e){
+					try {
+						sem.release();
+						Thread.sleep(5000);
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+				}
+			}
+			return;
 		}
 	}
 
@@ -240,6 +279,17 @@ public class HomeView {
 		public void run() {
 			while (true) {
 				try {
+					while (tryTo.isAlive()) {
+						Thread.sleep(100);
+					}
+					if (messageArr.size() != toSend) {
+						for (int i = toSend; i < messageArr.size(); i++) {
+							if (messageArr.get(i).getSender().equals(myip)) {
+								sendTCPMessage(messageArr.get(i));
+							}
+							toSend = i+1;
+						}
+					}
 					Message m = (Message) myInput.readObject();
 
 					sem.acquire();
@@ -249,10 +299,13 @@ public class HomeView {
 						Message aux = new Message(m.getSender(), m.getReceiver(), "");
 						aux.setPs(m.getPs());
 						aux.setPr(messageArr.size());
+						m.setPr(messageArr.size());
 						messageArr.add(m);
 						updateMessages(m);
 						aux.setStatus(2);
+						System.out.println("sent2");
 						sendTCPMessage(aux);
+						
 					} else if (m.getStatus() == 2) {
 						updateMessages(m);
 					} else if (m.getStatus() == 3) {
@@ -262,9 +315,15 @@ public class HomeView {
 					}
 					sem.release();
 				} catch (Exception e) {
-					e.printStackTrace();
+					sem.release();
+					if (!tryTo.isAlive()) {
+						tryTo = new connect();
+						tryTo.start();
+					}
+					break;
 				}
 			}
+			return;
 		}
 	}
 }
