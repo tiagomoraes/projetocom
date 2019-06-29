@@ -1,6 +1,9 @@
 package components;
 
-public class Message {
+import java.io.Serializable;
+
+public class Message implements Serializable{
+	private static final long serialVersionUID = 1L;
 	private String message; // conteudo da mensagem
 	private String sender; // ip de sender
 	private String receiver; // ip de receiver

@@ -2,6 +2,7 @@ package components;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.concurrent.Semaphore;
 
@@ -10,54 +11,36 @@ public class Main {
 		int port = 3001;
 		@SuppressWarnings("resource")
 		ServerSocket tmpsocket = new ServerSocket(port);
-		ArrayList <Message> messageVector = new ArrayList<Message>();
 		ArrayList<Connection> connectionVector = new ArrayList<Connection>();
 		Semaphore semaphore = new Semaphore(1);
-		//MessageQueue messageQueue = new MessageQueue(messageVector,connectionVector,semaphore);
-		//messageQueue.start();
 		boolean hasAlreadyConnected;
 
 		while (true) {
 			hasAlreadyConnected = false;
-			Connection connection = new Connection(tmpsocket.accept(), messageVector, connectionVector, semaphore);
+			Socket sock = tmpsocket.accept();
+			System.out.println(sock.getInetAddress().toString().replaceAll("/", ""));
 			try {
 				semaphore.acquire();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			for (int x = 0; x < connectionVector.size(); x++) {
-				if (connection.getIp().equals(connectionVector.get(x).getIp())) {
+			for (int i = 0; i < connectionVector.size(); i++) {
+				if (sock.getInetAddress().toString().replaceAll("/", "").equals(connectionVector.get(i).getIp())) {
 					hasAlreadyConnected = true;
-					connectionVector.get(x).reconnect(tmpsocket.accept());
-					for (int i = 0; i < messageVector.size(); i++) {
-						for (int j = 0; j < connectionVector.size(); j++) {
-							try {
-								semaphore.acquire();
-							} catch (InterruptedException e1) {
-								e1.printStackTrace();
-							}
-							if (connectionVector.get(j).isConnected()
-									&& messageVector.get(i).getReceiver().equals(connectionVector.get(j).getIp())) {
-
-								try {
-									connectionVector.get(j).sendMessage(messageVector.get(i));
-									messageVector.remove(messageVector.get(i));
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-							}
-						}
-						semaphore.release();
-					}
+					connectionVector.set(i, new Connection(sock, connectionVector.get(i).getMessageVector(),
+							connectionVector, semaphore));
+					connectionVector.get(i).start();
+					connectionVector.get(i).sendMessagesOnReconnect();
 				}
 			}
 
 			if (!hasAlreadyConnected) {
+				Connection connection = new Connection(sock, connectionVector, semaphore);
 				connectionVector.add(connection);
+				connection.start();
 			}
 			semaphore.release();
-			connection.start();
-			System.out.println(connectionVector.size());
+			System.out.println("connections: " + connectionVector.size());
 
 		}
 	}
