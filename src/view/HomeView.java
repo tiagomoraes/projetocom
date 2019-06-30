@@ -41,6 +41,10 @@ import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import javax.swing.JTable;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class HomeView {
 
@@ -63,8 +67,7 @@ public class HomeView {
 	private int lastRead;
 	private int toSend;
 	private connect tryTo;
-	//private checkToSend check;
-	private boolean st;
+	
 	/**
 	 * Launch the application.
 	 */
@@ -103,7 +106,6 @@ public class HomeView {
 		this.sem = new Semaphore(1);
 		this.messageArr = new Vector<Message>();
 		this.toSend = 0;
-		this.st = true;
 
 		// Initialize jPanel
 		initialize();
@@ -112,8 +114,6 @@ public class HomeView {
 		// connect to server
 		this.tryTo = new connect();
 		tryTo.start();
-//		this.check = new checkToSend(this.tryTo);
-//		this.check.start();
 	}
 
 	/**
@@ -122,37 +122,73 @@ public class HomeView {
 	private void initialize() {
 
 		frame = new JFrame();
+		frame.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (lastRead != messageArr.size()) {
+					sendMessage("-1", "-1", "-1");
+				}
+			}
+		});
 		frame.setBounds(100, 100, 440, 600);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(new GridLayout(1, 0, 0, 0));
 
 		JPanel panel = new JPanel();
+		panel.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (lastRead != messageArr.size()) {
+					sendMessage("-1", "-1", "-1");
+				}
+			}
+		});
 		panel.setBackground(Color.WHITE);
 		frame.getContentPane().add(panel);
 		panel.setLayout(null);
 
 		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (lastRead != messageArr.size()) {
+					sendMessage("-1", "-1", "-1");
+				}
+			}
+		});
 		scrollPane.setBounds(30, 12, 373, 476);
 		panel.add(scrollPane);
 
 		this.boxMessages = Box.createVerticalBox();
+		boxMessages.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (lastRead != messageArr.size()) {
+					sendMessage("-1", "-1", "-1");
+				}
+			}
+		});
 		scrollPane.setViewportView(boxMessages);
 
 		textInput = new JTextField();
-		textInput.setBounds(30, 513, 280, 33);
+		textInput.setBounds(30, 513, 373, 33);
 		panel.add(textInput);
 		textInput.setColumns(10);
-
-		// When button "Send" is clicked, append an item to the list and refresh content
-		JButton btnSend = new JButton("Send");
-		btnSend.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent arg0) {
-				sendMessage(myip, auserip,textInput.getText());
+		textInput.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				int key = e.getKeyCode();
+				if (key == KeyEvent.VK_ENTER) {
+					if (!textInput.getText().equals("")) {
+						sendMessage(myip, auserip,textInput.getText());
+					}
+				} else {
+					if (lastRead != messageArr.size()) {
+						sendMessage("-1", "-1", "-1");
+					}
+				}
 			}
 		});
-		
-		btnSend.setBounds(315, 513, 81, 33);
-		panel.add(btnSend);
 		
 		// poder ser tocar no scroll ou em alguma parte do app, digitar alguma coisa la na box etc. 
 		// ler msg le le tudo na tela q o outro enviou (só manda uma msg contendo o indice no vetor da ultima msg enviada por sender)
@@ -175,19 +211,28 @@ public class HomeView {
 		// Code to send message TCP
 		try {
 			sem.acquire();
-			//if (!msg.getSender().equals("-1")) {
+			if (!msg.getSender().equals("-1")) {
 				msg.setPs(messageArr.size());
 				msg.setPr(-1);
 				messageArr.add(msg);
-			//}
+				this.lastRead = messageArr.size();
+			}
 			if (!tryTo.isAlive()) {
-				//System.out.println("kaka");
-				for (int i = this.toSend; i < messageArr.size(); i++) {
-					if (messageArr.get(i).getSender().equals(this.myip)) {
-						sendTCPMessage(messageArr.get(i));
+				if (msg.getStatus() == 3) {
+					msg.setPs(messageArr.get(messageArr.size()-1).getPs());
+					msg.setPr(messageArr.get(messageArr.size()-1).getPr());
+					this.lastRead = messageArr.size();
+				} else if (msg.getStatus() == 4) { 
+					//msg.setPs(messageArr.get(messageArr.size()-1).getPs()); ver como vai fazer
+					//msg.setPr(messageArr.get(messageArr.size()-1).getPr()); ver como vai fazer 
+				} else {
+					for (int i = this.toSend; i < messageArr.size(); i++) {
+						if (messageArr.get(i).getSender().equals(this.myip)) {
+							sendTCPMessage(messageArr.get(i));
+						}
 					}
-					this.toSend = i+1;
 				}
+		
 			}			
 			updateMessages(msg);
 			sem.release();
@@ -200,14 +245,13 @@ public class HomeView {
 		this.textInput.setText("");
 	}
 
-	private void sendTCPMessage(Message m) {
+	private void sendTCPMessage(Message m) throws Exception {
 		try {
-			//System.out.println("mememememem");
-			if (m.getStatus() == 2) System.out.println("msg 2");
 			myOutput.writeObject(m);
 			myOutput.flush();
+			this.toSend++;
 		} catch (Exception e) {
-			e.printStackTrace();
+			throw e;
 		}
 	}
 
@@ -231,8 +275,12 @@ public class HomeView {
 			JPanel gridMessage = new JPanel();
 			boxMessages.add(gridMessage);
 			gridMessage.setLayout(new GridLayout(1, 0, 0, 0));
-
-			JLabel txtMessage = new JLabel(m.getMessage());
+			JLabel txtMessage = new JLabel();
+			if (m.getSender().equals(this.myip)) {
+				txtMessage = new JLabel(this.myname + ": " + m.getMessage());
+			} else if (m.getReceiver().equals(this.auserip)) {
+				txtMessage = new JLabel(this.ausername + ": " + m.getMessage());
+			} 
 			gridMessage.add(txtMessage);
 			
 			if (m.getSender().equals(myip)) {
