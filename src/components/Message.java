@@ -22,6 +22,23 @@ public class Message implements Serializable{
 		this.message = message;
 		this.status = 0;
 	}
+	
+	public Message(String sender, String receiver, String message, int Status) {
+		this.sender = sender;
+		this.receiver = receiver;
+		this.message = message;
+		this.status = Status;
+	}
+	
+	public Message(String sender, String receiver, String message, int Status, int Ps, int Pr) {
+		this.sender = sender;
+		this.receiver = receiver;
+		this.message = message;
+		this.status = Status;
+		this.ps = Ps;
+		this.pr = Pr;
+	}
+
 
 	public String getSender() {
 		return sender;

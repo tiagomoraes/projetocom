@@ -44,6 +44,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.Scrollbar;
 
 public class HomeView {
 
@@ -53,6 +54,7 @@ public class HomeView {
 
 	// Local variables should be declared here
 	private Vector<Message> messageArr;
+	private Vector<Message> delToSend;
 	private ObjectInputStream myInput;
 	private ObjectOutputStream myOutput;
 	private Socket mysocket;
@@ -63,7 +65,7 @@ public class HomeView {
 	private String serverip;
 	private Semaphore sem;
 	private int port;
-	private int lastRead;
+	private int lastRead, firstToRead;
 	private int toSend;
 	private connect tryTo;
 	private boolean moveOff;
@@ -104,8 +106,10 @@ public class HomeView {
 		this.ausername = ausername;
 		this.port = myport;
 		this.lastRead = 0;
+		this.firstToRead = 0;
 		this.sem = new Semaphore(1);
 		this.messageArr = new Vector<Message>();
+		this.delToSend = new Vector<Message>();
 		this.toSend = 0;
 		this.moveOff = false;
 
@@ -130,12 +134,12 @@ public class HomeView {
 				if (tryTo.isAlive()) {
 					moveOff = true;
 				}
-				if (messageArr.size() != 0 && !tryTo.isAlive() && !messageArr.lastElement().getSender().equals(myip) && lastRead != messageArr.size()) {
-					sendMessage("-1", "-1", "-1");
+				if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+					sendMessage(new Message(myip, auserip, "", 3));
 				}
 			}
 		});
-		frame.setBounds(100, 100, 440, 600);
+		frame.setBounds(100, 100, 607, 697);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(new GridLayout(1, 0, 0, 0));
 
@@ -146,8 +150,8 @@ public class HomeView {
 				if (tryTo.isAlive()) {
 					moveOff = true;
 				}
-				if (messageArr.size() != 0 && !tryTo.isAlive() && !messageArr.lastElement().getSender().equals(myip) && lastRead != messageArr.size()) {
-					sendMessage("-1", "-1", "-1");
+				if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+					sendMessage(new Message(myip, auserip, "", 3));
 				}
 			}
 		});
@@ -162,12 +166,12 @@ public class HomeView {
 				if (tryTo.isAlive()) {
 					moveOff = true;
 				}
-				if (messageArr.size() != 0 && !tryTo.isAlive() && !messageArr.lastElement().getSender().equals(myip) && lastRead != messageArr.size()) {
-					sendMessage("-1", "-1", "-1");
+				if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+					sendMessage(new Message(myip, auserip, "", 3));
 				}
 			}
 		});
-		scrollPane.setBounds(30, 12, 373, 476);
+		scrollPane.setBounds(38, 84, 525, 489);
 		panel.add(scrollPane);
 
 		this.boxMessages = Box.createVerticalBox();
@@ -177,17 +181,18 @@ public class HomeView {
 				if (tryTo.isAlive()) {
 					moveOff = true;
 				}
-				if (messageArr.size() != 0 && !tryTo.isAlive() && !messageArr.lastElement().getSender().equals(myip) && lastRead != messageArr.size()) {
-					sendMessage("-1", "-1", "-1");
+				if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+					sendMessage(new Message(myip, auserip, "", 3));
 				}
 			}
 		});
 		scrollPane.setViewportView(boxMessages);
 
 		textInput = new JTextField();
-		textInput.setBounds(30, 513, 373, 33);
+		textInput.setBounds(111, 601, 373, 33);
 		panel.add(textInput);
 		textInput.setColumns(10);
+
 		textInput.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
@@ -195,139 +200,150 @@ public class HomeView {
 					moveOff = true;
 				}
 				int key = e.getKeyCode();
-				System.out.println("teste key: " + lastRead);
 				if (key == KeyEvent.VK_ENTER) {
 					if (!textInput.getText().equals("")) {
-						if (messageArr.size() != 0 && !tryTo.isAlive() && !messageArr.lastElement().getSender().equals(myip) && lastRead != messageArr.size()) {
-							sendMessage("-1", "-1", "-1");
+						if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+							sendMessage(new Message(myip, auserip, "", 3));
 						}
-						sendMessage(myip, auserip, textInput.getText());
+						sendMessage(new Message(myip, auserip, textInput.getText()));
 					} else {
-						if (messageArr.size() != 0 && !tryTo.isAlive() && !messageArr.lastElement().getSender().equals(myip) && lastRead != messageArr.size()) {
-							sendMessage("-1", "-1", "-1");
+						if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+							sendMessage(new Message(myip, auserip, "", 3));
 						}
 					}
 				} else {
-					// System.out.println("teste key");
-					if (messageArr.size() != 0 && !tryTo.isAlive() && !messageArr.lastElement().getSender().equals(myip) && lastRead != messageArr.size()) {
-						sendMessage("-1", "-1", "-1");
+					if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+						sendMessage(new Message(myip, auserip, "", 3));
 					}
 				}
 			}
 		});
 
-		// poder ser tocar no scroll ou em alguma parte do app, digitar alguma coisa la
-		// na box etc.
-		// ler msg le le tudo na tela q o outro enviou (só manda uma msg contendo o
-		// indice no vetor da ultima msg enviada por sender)
-		// ter um boolean ou alguma condição pra nao mandar msg redundante
-		// action read message
-		// private void readMessage() {
-		// //send message with 3
-		// }
-
-		// pode ser um botao no lado de cada msg ou um double click
-		// se for msg do outro usuario, só apaga localmente, se for sua manda uma msg
-		// com 4 e o indice no seu vetor
-		// action delete message
-		// private void deleteMessage() {
-		// //send message with 4
-		// }
 	}
 
-	private void sendMessage(String sender, String receiver, String message) {
-		Message msg = new Message(sender, receiver, message);
-		// Code to send message TCP
+	private void sendMessage(Message msg) {
 		try {
 			sem.acquire();
-			if (msg.getSender().equals("-1")) {
-				msg.setStatus(3);
-			} else if (msg.getSender().equals("-2")) {
-				msg.setStatus(4);
-			} else if (!msg.getSender().equals("-1")) {
-				msg.setPs(messageArr.size());
-				msg.setPr(-1);
-				messageArr.add(msg);
-				//System.out.println("GOT THERE");
-				// this.lastRead = messageArr.size();
+			if (msg.getStatus() == 0) {
+				trySend(msg);
+				updateMessages(msg);
+			} else if (msg.getStatus() == 3) {
+				sendReadStatus(msg);
+			} else if (msg.getStatus() == 4) {
+				sendDelStatus(msg);
 			}
-			if (tryTo.isAlive()) System.out.println("omegalul");
-			if (!tryTo.isAlive()) {
-				//System.out.println("GOT THERE");
-				if (msg.getStatus() == 3) {
-
-					msg.setSender(this.auserip);
-					msg.setReceiver(this.myip);
-					msg.setPs(messageArr.get(messageArr.size() - 1).getPs());
-					msg.setPr(messageArr.get(messageArr.size() - 1).getPr());
-					this.lastRead = messageArr.size();
-					sendTCPMessage(msg);
-				} else if (msg.getStatus() == 4) {
-					// msg.setPs(messageArr.get(messageArr.size()-1).getPs()); ver como vai fazer
-					// msg.setPr(messageArr.get(messageArr.size()-1).getPr()); ver como vai fazer
-					updateMessages(msg);
-				} else {
-					for (int i = this.toSend; i < messageArr.size(); i++) {
-						//System.out.println("GOT THERE");
-						if (messageArr.get(i).getSender().equals(this.myip)) {
-							sendTCPMessage(messageArr.get(i));
-						}
-
-					}
-
-					// this.lastRead = messageArr.size();
-				}
-			}
-			if (msg.getStatus() == 0)updateMessages(msg);
 			sem.release();
 		} catch (Exception e) {
+
 			sem.release();
-			//if (!tryTo.isAlive()) {
-			tryTo = new connect();
-			tryTo.start();
-			//}
+
+			if (!tryTo.isAlive()) {
+				tryTo = new connect();
+				tryTo.start();
+			}
 		}
+		System.out.println(this.lastRead + " " + this.firstToRead + " " + this.toSend + " " + delToSend.size()); // for debuging
 		this.textInput.setText("");
+	}
+
+	public void trySend (Message msg) throws Exception {
+		msg.setPs(messageArr.size());
+		msg.setPr(-1);
+		messageArr.add(msg);
+		this.firstToRead++;
+		if (!tryTo.isAlive()) {
+			for (int i = this.toSend; i < messageArr.size(); i++) {
+				if (messageArr.get(i).getSender().equals(this.myip)) {
+					try {
+						sendTCPMessage(messageArr.get(i));
+					} catch (Exception e) {
+
+						throw e;
+					}
+				}
+				this.toSend = i + 1;
+			}
+		}
+	}
+
+	public void sendConfirmationStatus(String sender, String receiver, String message, Message m) throws Exception {
+		Message aux = new Message(sender, receiver, message);
+		aux.setPs(m.getPs());
+		aux.setPr(messageArr.size());
+		m.setPr(messageArr.size());
+		messageArr.add(m);
+		updateMessages(m);
+		aux.setStatus(2);
+		try {
+			sendTCPMessage(aux);
+		} catch (Exception e) {
+			throw e;
+		}
+	}
+
+	public void sendReadStatus(Message msg) throws Exception {
+		msg.setPs(messageArr.get(messageArr.size() - 1).getPs());
+		msg.setPr(messageArr.get(messageArr.size() - 1).getPr());
+		this.firstToRead = messageArr.size();
+		try {
+			sendTCPMessage(msg);
+		} catch (Exception e) {
+			throw e;
+		}
+	}
+
+	public void sendDelStatus (Message msg) throws Exception {
+		msg.setStatus(4);
+		updateMessages(msg);
+		if (this.myip == msg.getSender()) {
+			try {
+				sendTCPMessage(msg);
+			} catch (Exception e) {
+				this.delToSend.add(msg);
+				throw e;
+			}
+		}
+
 	}
 
 	private void sendTCPMessage(Message m) throws Exception {
 		try {
-			System.out.println(toSend);
 			myOutput.writeObject(m);
 			myOutput.flush();
-			if (m.getStatus() == 0) this.toSend++;
-			System.out.println(toSend);
 		} catch (Exception e) {
 			throw e;
 		}
 	}
 
 	private void updateMessages(Message i) {
-		//System.out.println("bug");
 		boxMessages.removeAll();
 		if (this.myip.equals(i.getSender())) {
-			messageArr.get(i.getPs()).setStatus(i.getStatus());
 			if (i.getStatus() == 3) {
-				for (int j = i.getPr(); j >= 0 ; j--) {
+				for (int j = i.getPs(); j >= this.lastRead ; j--) {
 					this.messageArr.get(j).setStatus(3);
 				}
+				this.lastRead = i.getPs()+1;
 			} else if (i.getStatus() == 2) {
+				messageArr.get(i.getPs()).setStatus(i.getStatus());
 				messageArr.get(i.getPs()).setPr(i.getPr());
 			} else if (i.getStatus() == 1) {
-				//
+				messageArr.get(i.getPs()).setStatus(i.getStatus());
+			} else if (i.getStatus() == 4) {
+				messageArr.get(i.getPs()).setStatus(i.getStatus());
+				messageArr.get(i.getPs()).setMessage("---Mensagem Removida---");
 			}
-
 		} else if (this.myip.equals(i.getReceiver())) {
 			messageArr.get(i.getPr()).setStatus(i.getStatus());
-			if (i.getStatus() == 4) messageArr.get(i.getPr()).setMessage("----DELETED----");
+			if (i.getStatus() == 4) messageArr.get(i.getPr()).setMessage("---Mensagem Removida---");
 		}
 		for (Message m : messageArr) {
-			// System.out.println(m.getMessage());
 			// Display messages
 			JPanel gridMessage = new JPanel();
+
 			boxMessages.add(gridMessage);
 			gridMessage.setLayout(new GridLayout(1, 0, 0, 0));
 			JLabel txtMessage = new JLabel();
+	
 			if (m.getSender().equals(this.myip)) {
 				txtMessage = new JLabel(this.myname + ": " + m.getMessage());
 			} else if (m.getSender().equals(this.auserip)) {
@@ -339,6 +355,24 @@ public class HomeView {
 				JLabel statusMessage = new JLabel(String.valueOf(m.getStatus()));
 				gridMessage.add(statusMessage);
 			}
+			JButton btnNewButton = new JButton("DEL");
+			btnNewButton.addMouseListener(new MouseAdapter() {
+				private int id = (myip.equals(m.getSender())) ? m.getPs() : m.getPr();
+
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					if (tryTo.isAlive()) {
+						moveOff = true;
+					}
+					if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+						sendMessage(new Message(myip, auserip, "", 3));
+					}
+					if (!messageArr.get(id).getMessage().equals("---Mensagem Removida---")) {
+						sendMessage(new Message(messageArr.get(id).getSender(), messageArr.get(id).getReceiver(), "", 4, messageArr.get(id).getPs(), messageArr.get(id).getPr()));
+					}
+				}
+			});
+			gridMessage.add(btnNewButton);
 		}
 
 		boxMessages.revalidate();
@@ -349,7 +383,6 @@ public class HomeView {
 		public connect() {
 			super();
 		}
-
 		public void run() {
 			while (true) {
 				try {
@@ -377,68 +410,72 @@ public class HomeView {
 		public listen() {
 			super();
 		}
-
 		public void run() {
+			try {
+				while (tryTo.isAlive()) {
+					Thread.sleep(100);
+				}
+				sem.acquire();
+				if (moveOff && messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
+					sendReadStatus(new Message(myip, auserip, "", 3));
+				}
+				moveOff = false;
+				if (messageArr.size() != toSend) {
+					for (int i = toSend; i < messageArr.size(); i++) {
+						if (messageArr.get(i).getSender().equals(myip)) {
+							if (delToSend.size() > 0) {
+								Message aux = new Message (messageArr.get(i).getSender(), messageArr.get(i).getReceiver(), "", 4, messageArr.get(i).getPs(), messageArr.get(i).getPr());
+								if (delToSend.contains(aux)) {
+									messageArr.get(i).setMessage("---Mensagem Removida---");
+									delToSend.remove(aux);
+								}
+							}
+							sendTCPMessage(messageArr.get(i));
+						}
+						toSend = i + 1;
+					}
+				}
+				if (delToSend.size() != 0) {
+					for (Message m : delToSend) {
+						sendDelStatus(m);
+					}
+					delToSend.removeAllElements();
+				}
+				sem.release();
+			} catch (Exception e) {
+				if (!tryTo.isAlive()) {
+					tryTo = new connect();
+					tryTo.start();
+				}
+				sem.release();
+				return;
+			}
 			while (true) {
 				try {
-					while (tryTo.isAlive()) {
-						Thread.sleep(100);
-					}
-					sem.acquire();
-					if (moveOff && messageArr.size() != 0 && !tryTo.isAlive() && !messageArr.lastElement().getSender().equals(myip) && lastRead != messageArr.size()) {
-						sendMessage("-1", "-1", "-1");
-					}
-					moveOff = false;
-					System.out.println(toSend);
-					if (messageArr.size() != toSend) {
-						for (int i = toSend; i < messageArr.size(); i++) {
-							System.out.println("kaka");
-							if (messageArr.get(i).getSender().equals(myip)) {
-								sendTCPMessage(messageArr.get(i));
-							}
-							toSend = i + 1;
-						}
-					}
-
-					sem.release();
-
 					Message m = (Message) myInput.readObject();
 
 					sem.acquire();
 					if (m.getStatus() == 1 && m.getSender().equals(myip)) {
 						updateMessages(m);
-					} else if (m.getStatus() == 1 && m.getReceiver().contains(myip)) {
-						Message aux = new Message(m.getSender(), m.getReceiver(), "");
-						aux.setPs(m.getPs());
-						aux.setPr(messageArr.size());
-						m.setPr(messageArr.size());
-						messageArr.add(m);
-						updateMessages(m);
-						aux.setStatus(2);
-						// lastRead = messageArr.size();
-						// System.out.println("sent2");
-						sendTCPMessage(aux);
-
+					} else if (m.getStatus() == 1 && m.getReceiver().equals(myip)) {
+						sendConfirmationStatus(m.getSender(), m.getReceiver(), "", m);
 					} else if (m.getStatus() == 2) {
-						//System.out.println(m.getMessage() + ' ' + m.getSender() + ' ' + m.getReceiver());
 						updateMessages(m);
 					} else if (m.getStatus() == 3) {
-						//lastRead = messageArr.size();
 						updateMessages(m);
 					} else if (m.getStatus() == 4) {
 						updateMessages(m);
 					}
 					sem.release();
 				} catch (Exception e) {
+					if (!tryTo.isAlive()) {
+						tryTo = new connect();
+						tryTo.start();
+					}
 					sem.release();
-					//if (!tryTo.isAlive()) {
-					tryTo = new connect();
-					tryTo.start();
-					//}
-					break;
+					return;
 				}
 			}
-			return;
 		}
 	}
 }
