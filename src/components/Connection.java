@@ -13,6 +13,7 @@ public class Connection extends Thread {
 	private ObjectOutputStream MyOutput;
 	private String ip;
 	private ArrayList<Message> messageVector;
+	private ArrayList<Message> statusFour;
 	private ArrayList<Connection> connectionVector;
 	private Semaphore semaphore;
 
@@ -75,12 +76,14 @@ public class Connection extends Thread {
 	}
 
 	public void sendMessage(Message msg) throws IOException {
+
 		if (isConnected()) {
 			this.MyOutput.writeObject(msg);
 			this.MyOutput.flush();
 		} else {
 			this.messageVector.add(msg);
 		}
+
 	}
 
 	public boolean isConnected() {
@@ -108,7 +111,7 @@ public class Connection extends Thread {
 						msg.setStatus(1); // sent
 						this.MyOutput.writeObject(msg);// confirmou recebimento pelo servidor para sender
 						this.MyOutput.flush();
-						// enviar pro reciver
+// enviar pro reciver
 						try {
 							semaphore.acquire();
 						} catch (InterruptedException e) {
@@ -140,7 +143,7 @@ public class Connection extends Thread {
 						}
 						for (int i = 0; i < this.connectionVector.size(); i++) {
 							if (connectionVector.get(i).getIp().equals(msg.getSender())) {
-								System.out.println("found connection to send msg with status 2"+'\n');
+								System.out.println("found connection to send msg with status 2" + '\n');
 								connectionVector.get(i).sendMessage(msg);
 							}
 						}
@@ -175,7 +178,7 @@ public class Connection extends Thread {
 						semaphore.release();
 					} else {
 						System.out.println("eh vey, deu ruim");
-						// erro?
+// erro?
 					}
 				} else {
 					return;
