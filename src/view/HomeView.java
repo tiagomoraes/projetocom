@@ -34,6 +34,7 @@ import java.awt.BorderLayout;
 import javax.swing.JInternalFrame;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
+import javax.swing.ImageIcon;
 import javax.swing.BoxLayout;
 import javax.swing.JTextPane;
 import java.awt.GridBagLayout;
@@ -135,7 +136,7 @@ public class HomeView {
 					moveOff = true;
 				}
 				if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-					sendMessage(new Message(myip, auserip, "", 3));
+					sendMessage(new Message(auserip, myip, "", 3));
 				}
 			}
 		});
@@ -151,7 +152,7 @@ public class HomeView {
 					moveOff = true;
 				}
 				if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-					sendMessage(new Message(myip, auserip, "", 3));
+					sendMessage(new Message(auserip, myip, "", 3));
 				}
 			}
 		});
@@ -167,7 +168,7 @@ public class HomeView {
 					moveOff = true;
 				}
 				if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-					sendMessage(new Message(myip, auserip, "", 3));
+					sendMessage(new Message(auserip, myip, "", 3));
 				}
 			}
 		});
@@ -182,7 +183,7 @@ public class HomeView {
 					moveOff = true;
 				}
 				if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-					sendMessage(new Message(myip, auserip, "", 3));
+					sendMessage(new Message(auserip, myip, "", 3));
 				}
 			}
 		});
@@ -203,17 +204,17 @@ public class HomeView {
 				if (key == KeyEvent.VK_ENTER) {
 					if (!textInput.getText().equals("")) {
 						if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-							sendMessage(new Message(myip, auserip, "", 3));
+							sendMessage(new Message(auserip, myip, "", 3));
 						}
 						sendMessage(new Message(myip, auserip, textInput.getText()));
 					} else {
 						if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-							sendMessage(new Message(myip, auserip, "", 3));
+							sendMessage(new Message(auserip, myip, "", 3));
 						}
 					}
 				} else {
 					if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-						sendMessage(new Message(myip, auserip, "", 3));
+						sendMessage(new Message(auserip, myip, "", 3));
 					}
 				}
 			}
@@ -227,10 +228,13 @@ public class HomeView {
 			if (msg.getStatus() == 0) {
 				trySend(msg);
 				updateMessages(msg);
+				this.textInput.setText("");
 			} else if (msg.getStatus() == 3) {
 				sendReadStatus(msg);
+				//	this.textInput.setText("");
 			} else if (msg.getStatus() == 4) {
 				sendDelStatus(msg);
+				//	this.textInput.setText("");
 			}
 			sem.release();
 		} catch (Exception e) {
@@ -242,11 +246,12 @@ public class HomeView {
 				tryTo.start();
 			}
 		}
-		System.out.println(this.lastRead + " " + this.firstToRead + " " + this.toSend + " " + delToSend.size()); // for debuging
-		this.textInput.setText("");
+		System.out.println(this.lastRead + " " + this.firstToRead + " " + this.toSend + " " + delToSend.size()); // for
+		// debuging
+		//	this.textInput.setText("");
 	}
 
-	public void trySend (Message msg) throws Exception {
+	public void trySend(Message msg) throws Exception {
 		msg.setPs(messageArr.size());
 		msg.setPr(-1);
 		messageArr.add(msg);
@@ -282,17 +287,19 @@ public class HomeView {
 	}
 
 	public void sendReadStatus(Message msg) throws Exception {
+		System.out.println("debug");
 		msg.setPs(messageArr.get(messageArr.size() - 1).getPs());
 		msg.setPr(messageArr.get(messageArr.size() - 1).getPr());
 		this.firstToRead = messageArr.size();
 		try {
+			System.out.println("debu2");
 			sendTCPMessage(msg);
 		} catch (Exception e) {
 			throw e;
 		}
 	}
 
-	public void sendDelStatus (Message msg) throws Exception {
+	public void sendDelStatus(Message msg) throws Exception {
 		msg.setStatus(4);
 		updateMessages(msg);
 		if (this.myip == msg.getSender()) {
@@ -315,14 +322,25 @@ public class HomeView {
 		}
 	}
 
+	protected ImageIcon createImageIcon(String path) {
+		java.net.URL imgURL = getClass().getResource(path);
+		if (imgURL != null) {
+			return new ImageIcon(imgURL);
+		} else {
+			System.err.println("Couldn't find file: " + path);
+			return null;
+		}
+	}
+
 	private void updateMessages(Message i) {
 		boxMessages.removeAll();
+		//System.out.println(i.getReceiver() +  " " + myip);
 		if (this.myip.equals(i.getSender())) {
 			if (i.getStatus() == 3) {
-				for (int j = i.getPs(); j >= this.lastRead ; j--) {
+				for (int j = i.getPs(); j >= this.lastRead; j--) {
 					this.messageArr.get(j).setStatus(3);
 				}
-				this.lastRead = i.getPs()+1;
+				this.lastRead = i.getPs() + 1;
 			} else if (i.getStatus() == 2) {
 				messageArr.get(i.getPs()).setStatus(i.getStatus());
 				messageArr.get(i.getPs()).setPr(i.getPr());
@@ -333,17 +351,32 @@ public class HomeView {
 				messageArr.get(i.getPs()).setMessage("---Mensagem Removida---");
 			}
 		} else if (this.myip.equals(i.getReceiver())) {
-			messageArr.get(i.getPr()).setStatus(i.getStatus());
-			if (i.getStatus() == 4) messageArr.get(i.getPr()).setMessage("---Mensagem Removida---");
+			if (i.getStatus() == 4) {
+				if (i.getPr() == -1) {
+					for (Message m : messageArr) {
+						if (m.getPs() == i.getPs()) {
+							m.setMessage("---Mensagem Removida---");
+							m.setStatus(i.getStatus());
+						}
+					}
+				} else {
+					messageArr.get(i.getPr()).setStatus(i.getStatus());
+					messageArr.get(i.getPr()).setMessage("---Mensagem Removida---");
+				}
+			} else
+				messageArr.get(i.getPr()).setStatus(i.getStatus());
+
 		}
+		//System.out.println("debugup" + i.getStatus());
 		for (Message m : messageArr) {
 			// Display messages
+			//System.out.println("HERE");
 			JPanel gridMessage = new JPanel();
 
 			boxMessages.add(gridMessage);
 			gridMessage.setLayout(new GridLayout(1, 0, 0, 0));
 			JLabel txtMessage = new JLabel();
-	
+
 			if (m.getSender().equals(this.myip)) {
 				txtMessage = new JLabel(this.myname + ": " + m.getMessage());
 			} else if (m.getSender().equals(this.auserip)) {
@@ -352,10 +385,35 @@ public class HomeView {
 			gridMessage.add(txtMessage);
 
 			if (m.getSender().equals(myip)) {
-				JLabel statusMessage = new JLabel(String.valueOf(m.getStatus()));
-				gridMessage.add(statusMessage);
+				//JLabel statusMessage = new JLabel(String.valueOf(m.getStatus()));
+				if (m.getStatus() == 0) {
+					ImageIcon icon = createImageIcon("status0.png");
+					JLabel statusMessage = new JLabel(icon);
+					gridMessage.add(statusMessage);
+				} else if (m.getStatus() == 1) {
+					ImageIcon icon = createImageIcon("status1.png");
+					JLabel statusMessage = new JLabel(icon);
+					gridMessage.add(statusMessage);
+				} else if (m.getStatus() == 2) {
+					ImageIcon icon = createImageIcon("status2.png");
+					JLabel statusMessage = new JLabel(icon);
+					gridMessage.add(statusMessage);
+				} else if (m.getStatus() == 3) {
+					ImageIcon icon = createImageIcon("status3.png");
+					JLabel statusMessage = new JLabel(icon);
+					gridMessage.add(statusMessage);
+				} else if (m.getStatus() == 4) {
+					ImageIcon icon = createImageIcon("status4.png");
+					JLabel statusMessage = new JLabel(icon);
+					gridMessage.add(statusMessage);
+				}
+				//gridMessage.add(statusMessage);
 			}
-			JButton btnNewButton = new JButton("DEL");
+			ImageIcon garbage = createImageIcon("garbage.png");
+			JButton btnNewButton = new JButton(garbage);
+			btnNewButton.setMargin(new Insets(0, 0, 0, 0));
+			btnNewButton.setBorder(null);
+			btnNewButton.setBackground(new Color(255, 255, 255, 0));
 			btnNewButton.addMouseListener(new MouseAdapter() {
 				private int id = (myip.equals(m.getSender())) ? m.getPs() : m.getPr();
 
@@ -365,24 +423,28 @@ public class HomeView {
 						moveOff = true;
 					}
 					if (messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-						sendMessage(new Message(myip, auserip, "", 3));
+						sendMessage(new Message(auserip, myip, "", 3));
 					}
 					if (!messageArr.get(id).getMessage().equals("---Mensagem Removida---")) {
-						sendMessage(new Message(messageArr.get(id).getSender(), messageArr.get(id).getReceiver(), "", 4, messageArr.get(id).getPs(), messageArr.get(id).getPr()));
+						sendMessage(new Message(messageArr.get(id).getSender(), messageArr.get(id).getReceiver(), "", 4,
+								messageArr.get(id).getPs(), messageArr.get(id).getPr()));
 					}
 				}
 			});
+
 			gridMessage.add(btnNewButton);
 		}
 
 		boxMessages.revalidate();
 		boxMessages.repaint();
+
 	}
 
 	class connect extends Thread {
 		public connect() {
 			super();
 		}
+
 		public void run() {
 			while (true) {
 				try {
@@ -395,6 +457,7 @@ public class HomeView {
 					break;
 				} catch (Exception e) {
 					try {
+						System.out.println("me");
 						sem.release();
 						Thread.sleep(5000);
 					} catch (Exception e1) {
@@ -410,8 +473,10 @@ public class HomeView {
 		public listen() {
 			super();
 		}
+
 		public void run() {
 			try {
+				System.out.println("meme estranho");
 				while (tryTo.isAlive()) {
 					Thread.sleep(100);
 				}
@@ -424,7 +489,9 @@ public class HomeView {
 					for (int i = toSend; i < messageArr.size(); i++) {
 						if (messageArr.get(i).getSender().equals(myip)) {
 							if (delToSend.size() > 0) {
-								Message aux = new Message (messageArr.get(i).getSender(), messageArr.get(i).getReceiver(), "", 4, messageArr.get(i).getPs(), messageArr.get(i).getPr());
+								Message aux = new Message(messageArr.get(i).getSender(),
+										messageArr.get(i).getReceiver(), "", 4, messageArr.get(i).getPs(),
+										messageArr.get(i).getPr());
 								if (delToSend.contains(aux)) {
 									messageArr.get(i).setMessage("---Mensagem Removida---");
 									delToSend.remove(aux);
@@ -443,17 +510,18 @@ public class HomeView {
 				}
 				sem.release();
 			} catch (Exception e) {
+				sem.release();
 				if (!tryTo.isAlive()) {
 					tryTo = new connect();
 					tryTo.start();
 				}
-				sem.release();
 				return;
 			}
 			while (true) {
 				try {
 					Message m = (Message) myInput.readObject();
-
+					System.out.println(m.getMessage());
+					//System.out.println(m.getStatus());
 					sem.acquire();
 					if (m.getStatus() == 1 && m.getSender().equals(myip)) {
 						updateMessages(m);
@@ -462,17 +530,19 @@ public class HomeView {
 					} else if (m.getStatus() == 2) {
 						updateMessages(m);
 					} else if (m.getStatus() == 3) {
+						System.out.println("");
 						updateMessages(m);
 					} else if (m.getStatus() == 4) {
 						updateMessages(m);
 					}
 					sem.release();
 				} catch (Exception e) {
+					sem.release();
 					if (!tryTo.isAlive()) {
 						tryTo = new connect();
 						tryTo.start();
 					}
-					sem.release();
+
 					return;
 				}
 			}
