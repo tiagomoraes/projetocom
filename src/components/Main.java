@@ -29,8 +29,8 @@ public class Main {
 					hasAlreadyConnected = true;
 					connectionVector.set(i, new Connection(sock, connectionVector.get(i).getMessageVector(),
 							connectionVector, semaphore));
-					connectionVector.get(i).start();
 					connectionVector.get(i).sendMessagesOnReconnect();
+					connectionVector.get(i).start();
 				}
 			}
 

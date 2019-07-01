@@ -83,13 +83,6 @@ public class Connection extends Thread {
 		}
 	}
 
-	public void reconnect(Socket socket) throws IOException {
-		this.socket = socket;
-		this.MyOutput = new ObjectOutputStream(socket.getOutputStream());
-		this.MyInput = new ObjectInputStream(socket.getInputStream());
-		sendMessagesOnReconnect();
-	}
-
 	public boolean isConnected() {
 		if (this.socket != null) {
 			return !this.socket.isClosed();
@@ -99,15 +92,19 @@ public class Connection extends Thread {
 	}
 
 	public void run() {
+
 		boolean reciverExist;
 		while (true) {
 			reciverExist = false;
 			try {
 				if (this.isConnected()) {
+					System.out.println("waiting for msg");
 					Message msg = (Message) this.MyInput.readObject();
+					System.out.println("got msg");
 					System.out.printf("recived msg with%nstatus: %d%nmessage: %s%n%n", msg.getStatus(),
 							msg.getMessage());
 					if (msg.getStatus() == 0) { // pending
+						System.out.println("got msg with status 0");
 						msg.setStatus(1); // sent
 						this.MyOutput.writeObject(msg);// confirmou recebimento pelo servidor para sender
 						this.MyOutput.flush();
@@ -121,11 +118,13 @@ public class Connection extends Thread {
 						for (int i = 0; i < this.connectionVector.size(); i++) {
 							if (connectionVector.get(i).getIp().equals(msg.getReceiver())) {
 								reciverExist = true;
+								System.out.println("sent it to reciver = " + msg.getReceiver() + '\n');
 								connectionVector.get(i).sendMessage(msg);
 								this.MyOutput.flush();
 							}
 						}
 						if (!reciverExist) {
+							System.out.println("reciver do not exist :(");
 							Connection reciverConnection = new Connection(msg.getReceiver(), this.connectionVector,
 									this.semaphore);
 							connectionVector.add(reciverConnection);
@@ -141,36 +140,41 @@ public class Connection extends Thread {
 						}
 						for (int i = 0; i < this.connectionVector.size(); i++) {
 							if (connectionVector.get(i).getIp().equals(msg.getSender())) {
+								System.out.println("found connection to send msg with status 2"+'\n');
 								connectionVector.get(i).sendMessage(msg);
-								this.MyOutput.flush();
 							}
 						}
 						semaphore.release();
 					} else if (msg.getStatus() == 3) {
-						this.MyOutput.writeObject(msg);// OK
-						this.MyOutput.flush();
+						System.out.println("got stauts 3");
+						try {
+							semaphore.acquire();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						for (int i = 0; i < this.connectionVector.size(); i++) {
+							if (connectionVector.get(i).getIp().equals(msg.getSender())) {
+								System.out.println("sent status 3 to: " + msg.getSender());
+								connectionVector.get(i).sendMessage(msg);
+							}
+						}
+						semaphore.release();
+						System.out.println("out of 'for' to send msg with status 3");
 					} else if (msg.getStatus() == 4) {
 						try {
 							semaphore.acquire();
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
-						reciverExist = false;
 						for (int i = 0; i < this.connectionVector.size(); i++) {
 							if (connectionVector.get(i).getIp().equals(msg.getReceiver())) {
-								reciverExist = true;
 								connectionVector.get(i).sendMessage(msg);
 								this.MyOutput.flush();
 							}
 						}
-						if (!reciverExist) {
-							Connection reciverConnection = new Connection(msg.getReceiver(), this.connectionVector,
-									this.semaphore);
-							connectionVector.add(reciverConnection);
-							reciverConnection.sendMessage(msg);
-						}
 						semaphore.release();
 					} else {
+						System.out.println("eh vey, deu ruim");
 						// erro?
 					}
 				} else {
