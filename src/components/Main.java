@@ -18,7 +18,6 @@ public class Main {
 		while (true) {
 			hasAlreadyConnected = false;
 			Socket sock = tmpsocket.accept();
-			System.out.println(sock.getInetAddress().toString().replaceAll("/", ""));
 			try {
 				semaphore.acquire();
 			} catch (InterruptedException e) {
@@ -40,7 +39,6 @@ public class Main {
 				connection.start();
 			}
 			semaphore.release();
-			System.out.println("connections: " + connectionVector.size());
 
 		}
 	}
