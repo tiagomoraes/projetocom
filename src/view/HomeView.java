@@ -16,8 +16,11 @@ import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollBar;
 import javax.swing.JTextField;
 import java.awt.Color;
+import java.awt.Dimension;
+
 import javax.swing.JList;
 import javax.swing.AbstractListModel;
 import javax.swing.border.LineBorder;
@@ -52,6 +55,7 @@ public class HomeView {
 	private JFrame frame;
 	private JTextField textInput;
 	private Box boxMessages;
+	private JScrollPane scrollPane;
 
 	// Local variables should be declared here
 	private Vector<Message> messageArr;
@@ -160,8 +164,8 @@ public class HomeView {
 		frame.getContentPane().add(panel);
 		panel.setLayout(null);
 
-		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.addMouseListener(new MouseAdapter() {
+		this.scrollPane = new JScrollPane();
+		this.scrollPane.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (tryTo.isAlive()) {
@@ -231,10 +235,8 @@ public class HomeView {
 				this.textInput.setText("");
 			} else if (msg.getStatus() == 3) {
 				sendReadStatus(msg);
-				//	this.textInput.setText("");
 			} else if (msg.getStatus() == 4) {
 				sendDelStatus(msg);
-				//	this.textInput.setText("");
 			}
 			sem.release();
 		} catch (Exception e) {
@@ -246,9 +248,6 @@ public class HomeView {
 				tryTo.start();
 			}
 		}
-		System.out.println(this.lastRead + " " + this.firstToRead + " " + this.toSend + " " + delToSend.size()); // for
-		// debuging
-		//	this.textInput.setText("");
 	}
 
 	public void trySend(Message msg) throws Exception {
@@ -287,12 +286,10 @@ public class HomeView {
 	}
 
 	public void sendReadStatus(Message msg) throws Exception {
-		System.out.println("debug");
 		msg.setPs(messageArr.get(messageArr.size() - 1).getPs());
 		msg.setPr(messageArr.get(messageArr.size() - 1).getPr());
 		this.firstToRead = messageArr.size();
 		try {
-			System.out.println("debu2");
 			sendTCPMessage(msg);
 		} catch (Exception e) {
 			throw e;
@@ -334,10 +331,9 @@ public class HomeView {
 
 	private void updateMessages(Message i) {
 		boxMessages.removeAll();
-		//System.out.println(i.getReceiver() +  " " + myip);
 		if (this.myip.equals(i.getSender())) {
 			if (i.getStatus() == 3) {
-				for (int j = i.getPs(); j >= this.lastRead; j--) {
+				for (int j = i.getPs(); j >= 0; j--) {
 					this.messageArr.get(j).setStatus(3);
 				}
 				this.lastRead = i.getPs() + 1;
@@ -367,20 +363,18 @@ public class HomeView {
 				messageArr.get(i.getPr()).setStatus(i.getStatus());
 
 		}
-		//System.out.println("debugup" + i.getStatus());
 		for (Message m : messageArr) {
 			// Display messages
-			//System.out.println("HERE");
 			JPanel gridMessage = new JPanel();
-
+			gridMessage.setPreferredSize(new Dimension(100,100));
 			boxMessages.add(gridMessage);
-			gridMessage.setLayout(new GridLayout(1, 0, 0, 0));
+			gridMessage.setLayout(new GridLayout(1, 3));
 			JLabel txtMessage = new JLabel();
 
 			if (m.getSender().equals(this.myip)) {
-				txtMessage = new JLabel(this.myname + ": " + m.getMessage());
+				txtMessage = new JLabel("<html><p style=\"word-break: break-all;\">" + this.myname + ": " + m.getMessage() + "</html></p>");
 			} else if (m.getSender().equals(this.auserip)) {
-				txtMessage = new JLabel(this.ausername + ": " + m.getMessage());
+				txtMessage = new JLabel("<html><p style=\"word-break: break-all;\">" + this.ausername + ": " + m.getMessage() + "</html></p>");
 			}
 			gridMessage.add(txtMessage);
 
@@ -437,6 +431,9 @@ public class HomeView {
 
 		boxMessages.revalidate();
 		boxMessages.repaint();
+		
+		JScrollBar sb = this.scrollPane.getVerticalScrollBar();
+		sb.setValue(sb.getMaximum());
 
 	}
 
@@ -457,7 +454,6 @@ public class HomeView {
 					break;
 				} catch (Exception e) {
 					try {
-						System.out.println("me");
 						sem.release();
 						Thread.sleep(5000);
 					} catch (Exception e1) {
@@ -476,7 +472,6 @@ public class HomeView {
 
 		public void run() {
 			try {
-				System.out.println("meme estranho");
 				while (tryTo.isAlive()) {
 					Thread.sleep(100);
 				}
@@ -520,8 +515,6 @@ public class HomeView {
 			while (true) {
 				try {
 					Message m = (Message) myInput.readObject();
-					System.out.println(m.getMessage());
-					//System.out.println(m.getStatus());
 					sem.acquire();
 					if (m.getStatus() == 1 && m.getSender().equals(myip)) {
 						updateMessages(m);
@@ -530,7 +523,6 @@ public class HomeView {
 					} else if (m.getStatus() == 2) {
 						updateMessages(m);
 					} else if (m.getStatus() == 3) {
-						System.out.println("");
 						updateMessages(m);
 					} else if (m.getStatus() == 4) {
 						updateMessages(m);
@@ -542,7 +534,6 @@ public class HomeView {
 						tryTo = new connect();
 						tryTo.start();
 					}
-
 					return;
 				}
 			}
