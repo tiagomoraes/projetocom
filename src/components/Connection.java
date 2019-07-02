@@ -15,9 +15,9 @@ public class Connection extends Thread {
 	private ArrayList<Message> messageVector;
 	private ArrayList<Connection> connectionVector;
 	private Semaphore semaphore;
-	
-	
-	
+
+
+
 	public Connection(String ip, ArrayList<Connection> connectionVector, Semaphore semaphore) {
 		super();
 		this.messageVector = new ArrayList<Message>();
@@ -98,9 +98,8 @@ public class Connection extends Thread {
 		try {
 			return (this.socket.getInetAddress().isReachable(100)) ? !this.socket.isClosed() : false;
 		} catch (Exception e) {
-			e.printStackTrace();
+			return false;
 		}
-		return false;
 	}
 
 	public void run() {
