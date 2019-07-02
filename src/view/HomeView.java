@@ -50,6 +50,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.Scrollbar;
 
+
 public class HomeView {
 
 	private JFrame frame;
@@ -248,6 +249,7 @@ public class HomeView {
 				tryTo.start();
 			}
 		}
+	
 	}
 
 	public void trySend(Message msg) throws Exception {
@@ -261,7 +263,6 @@ public class HomeView {
 					try {
 						sendTCPMessage(messageArr.get(i));
 					} catch (Exception e) {
-
 						throw e;
 					}
 				}
@@ -307,7 +308,6 @@ public class HomeView {
 				throw e;
 			}
 		}
-
 	}
 
 	private void sendTCPMessage(Message m) throws Exception {
@@ -334,7 +334,9 @@ public class HomeView {
 		if (this.myip.equals(i.getSender())) {
 			if (i.getStatus() == 3) {
 				for (int j = i.getPs(); j >= 0; j--) {
-					this.messageArr.get(j).setStatus(3);
+					if (this.messageArr.get(j).getStatus() != 4) {
+						this.messageArr.get(j).setStatus(3);
+					}
 				}
 				this.lastRead = i.getPs() + 1;
 			} else if (i.getStatus() == 2) {
@@ -359,9 +361,8 @@ public class HomeView {
 					messageArr.get(i.getPr()).setStatus(i.getStatus());
 					messageArr.get(i.getPr()).setMessage("---Mensagem Removida---");
 				}
-			} else
-				messageArr.get(i.getPr()).setStatus(i.getStatus());
-
+			} else messageArr.get(i.getPr()).setStatus(i.getStatus());
+				
 		}
 		for (Message m : messageArr) {
 			// Display messages
@@ -431,10 +432,9 @@ public class HomeView {
 
 		boxMessages.revalidate();
 		boxMessages.repaint();
-		
+
 		JScrollBar sb = this.scrollPane.getVerticalScrollBar();
 		sb.setValue(sb.getMaximum());
-
 	}
 
 	class connect extends Thread {
@@ -477,7 +477,7 @@ public class HomeView {
 				}
 				sem.acquire();
 				if (moveOff && messageArr.size() != 0 && !tryTo.isAlive() && firstToRead != messageArr.size()) {
-					sendReadStatus(new Message(myip, auserip, "", 3));
+					sendReadStatus(new Message(auserip, myip, "", 3));
 				}
 				moveOff = false;
 				if (messageArr.size() != toSend) {
